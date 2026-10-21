@@ -1,14 +1,17 @@
 correct_pin = "2026"
-attempts_counter = 0
-max_attempts = 3
-entered_pin = (input("Enter your pin: "))
-
 attempts = 0
-while attempts < 3:
-    print("You can enter your PIN")
-    attempts = attempts + 1
+max_attempts = 3
+authenticated = False
 
-if entered_pin == correct_pin:
-    print("PIN accepted")
-else:
-    print("Incorrect PIN")
+while attempts < max_attempts and not authenticated:
+    entered_pin = input("Enter your PIN: ")
+
+    if entered_pin == correct_pin:
+        authenticated = True
+        print("PIN accepted")
+    else:
+        attempts = attempts + 1
+        print("Incorrect PIN")
+        
+if not authenticated:
+     print("Access denied")
