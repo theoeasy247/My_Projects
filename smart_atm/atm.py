@@ -15,7 +15,7 @@ while attempts < max_attempts and not authenticated:
         print("Incorrect PIN")
         
 if not authenticated:
-     print("Access denied")
+     print("Access denied") 
 
 MENU = """
 ===== SMART ATM =====
@@ -31,21 +31,34 @@ if authenticated:
         choice = input("Select an option (1-4):").strip()
 
         if choice == "1":
-            print(f"Your balance is {balance}")
+            print(f"Your balance is ₦{balance}")
         elif choice == "2":
             try:
                 amount = int(input("Enter the deposit amount: "))
                 if amount > 0:
                     balance = balance + amount
-                    print(amount)
+                    print(f"Deposit successful: {amount}")
+                    print(f"Your new balance is: ₦{balance}")
                 else:
-                    print("Zero or negative amounts not allow") 
+                    print("Invalid deposit. Amount must be greater than zero.") 
                
             except ValueError:
-                print("You cannot use zero or negetive int.")
+                print("input must be a valid whole number")
     
         elif choice == "3":
-            print("Withdraw feature coming next")
+            try:
+                withdrawal_amount = int(input("Enter withdrawal amount: "))
+                if withdrawal_amount > 0. or negative:
+                    print("Invalid Amount. Amount must be greater than zero.") 
+
+                if withdrawal_amount <= balance:
+                    balance = balance - withdrawal_amount
+                    print(f"Withdrawal is successful: {withdrawal_amount}")
+                    print(f"Your new balance is: {balance}")
+            
+            except ValueError:
+                print("input must be a valid whole number")
+
         elif choice == "4":
             print("Thank you for using Smart ATM")
             break
