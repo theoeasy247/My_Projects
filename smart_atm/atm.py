@@ -56,7 +56,7 @@ if authenticated:
                     print("Invalid Amount. Amount must be greater than zero.") 
 
                 elif withdrawal_amount > balance:
-                    print("Insuficient funds")
+                    print("Insufficient funds")
                 
                 else:
                     balance = balance - withdrawal_amount
@@ -75,14 +75,18 @@ if authenticated:
             print("===== TRANSACTION HISTORY =====")
             total_deposits = 0
             total_withdrawals = 0
-
+        
             for transaction in transaction_history:
+                parts = transaction.split("₦")
+                amount= int(parts[1])
+
                 if transaction.startswith("Deposit"):
-                    deposit_amount + total_deposits
-                    pass
+                    total_deposits += amount
+                    
                 elif transaction.startswith("Withdrawal"):
-                    withdrawal_amount + total_withdrawals
-                    pass
+                    total_withdrawals += amount
+                    
+                    
                     
             if not transaction_history:
                 print("No transactions yet")
@@ -91,8 +95,12 @@ if authenticated:
                 for transaction in transaction_history:
                     print(transaction)
 
+            print(f"Total deposits: ₦{total_deposits}")
+            print(f"total withdrawals: ₦{total_withdrawals}")
+            print(f"Current balance: ₦{balance}")
+
         else:
-                print("Invalid choice. please select 1-5")
+            print("Invalid choice. please select 1-5")
 
      
            
