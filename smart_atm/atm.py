@@ -86,8 +86,7 @@ if authenticated:
                 elif transaction.startswith("Withdrawal"):
                     total_withdrawals += amount
                     
-                    
-                    
+                
             if not transaction_history:
                 print("No transactions yet")
 
