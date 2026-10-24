@@ -23,8 +23,8 @@ MENU = """
 1. Check Balance
 2. Deposit Money
 3. Withdraw Money
-4. Exit
-5. View Transaction History
+4. View Transaction History 
+5. Exit
 """
 
 if authenticated:
@@ -67,11 +67,9 @@ if authenticated:
             except ValueError:
                 print("input must be a valid whole number")
 
-        elif choice == "4":
-            print("Thank you for using Smart ATM")
-            break
+        
 
-        elif choice == "5":
+        elif choice == "4":
             print("===== TRANSACTION HISTORY =====")
             total_deposits = 0
             total_withdrawals = 0
@@ -98,8 +96,13 @@ if authenticated:
             print(f"total withdrawals: ₦{total_withdrawals}")
             print(f"Current balance: ₦{balance}")
 
+        elif choice == "5":
+            print("Thank you for using Smart ATM")
+            break
+            
         else:
             print("Invalid choice. please select 1-5")
 
+        
      
            
