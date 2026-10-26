@@ -1,4 +1,3 @@
-Test Directories 
 
 # Smart ATM Simulation
 
@@ -53,4 +52,4 @@ The program has been tested for:
 - Correct balance updates after transactions.
 
 # Important Note
-This is an educational simulation. It does not connect to a real bank account, and transaction history is stored only while the program is running.
+This project is an educational simulation and does not connect to a real bank account. The account balance and transaction history are stored in memory while the program is running. When the program exits, the transaction history and balance changes are not saved permanently.

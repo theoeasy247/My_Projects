@@ -93,7 +93,7 @@ if authenticated:
                     print(transaction)
 
             print(f"Total deposits: ₦{total_deposits}")
-            print(f"total withdrawals: ₦{total_withdrawals}")
+            print(f"Total withdrawals: ₦{total_withdrawals}")
             print(f"Current balance: ₦{balance}")
 
         elif choice == "5":
