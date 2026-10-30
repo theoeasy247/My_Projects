@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart ATM Login</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <div class="login-card">
+
+        <h1>SMART ATM</h1>
+
+        <p class="welcome">Welcome Back</p>
+
+        <p class="instruction">Please enter your PIN to continue</p>
+
+        <form>
+            <label for="pin">Enter ATM PIN</label>
+
+            <input
+                type="password"
+                id="pin"
+                name="pin"
+                placeholder="Enter your 4-digit PIN"
+                maxlength="4"
+            >
+
+            <button type="submit">Login</button>
+        </form>
+
+        <p class="footer">Secure ATM Simulation System</p>
+
+    </div>
+
+</body>
+</html>
