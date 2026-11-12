@@ -14,8 +14,10 @@ body {
 /* Login card */
 .login-card {
     background-color: #1e293b;
-    width: 350px;
+    width: 100%;
+    max-width: 350px;
     padding: 35px;
+    box-sizing: border-box;
     border-radius: 15px;
     text-align: center;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);

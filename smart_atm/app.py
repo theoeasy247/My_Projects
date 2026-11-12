@@ -1,12 +1,30 @@
-
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
-@app.route("/")
-def home():
-    return render_template("index.html")
+# Our temporary ATM PIN
+correct_pin = "2026"
 
+
+# Homepage and login route
+@app.route("/", methods=["GET", "POST"])
+def home():
+
+    message = ""
+
+    if request.method == "POST":
+
+        entered_pin = request.form.get("pin", "").strip()
+
+        if entered_pin == correct_pin:
+            message = "PIN accepted! Access granted."
+        else:
+            message = "Incorrect PIN. Please try again."
+
+    return render_template("index.html", message=message)
+
+
+# Run the Flask application
 if __name__ == "__main__":
     app.run(debug=True)
 
