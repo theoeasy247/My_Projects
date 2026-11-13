@@ -1,10 +1,10 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 
 app = Flask(__name__)
 
-# Our temporary ATM PIN
-correct_pin = "2026"
+app.secret_key = "smart-atm-development-key"
 
+correct_pin = "2026"
 
 # Homepage and login route
 @app.route("/", methods=["GET", "POST"])
@@ -12,14 +12,28 @@ def home():
 
     message = ""
 
+    attempts = session.get("attempts", 0)
+
     if request.method == "POST":
 
         entered_pin = request.form.get("pin", "").strip()
+        
+        if attempts >= 3:
+            message = "Too many incorrect attempts. Access denied."
 
-        if entered_pin == correct_pin:
-            message = "PIN accepted! Access granted."
         else:
-            message = "Incorrect PIN. Please try again."
+            if entered_pin == correct_pin:
+                session["attempts"] = 0
+                message = "PIN accepted! Access granted."
+
+            else:
+                attempts += 1
+                session["attempts"] = attempts
+
+                message = "Incorrect PIN. Please try again."
+
+                if attempts >= 3:
+                    message = "Too many incorrect attempts. Access denied."
 
     return render_template("index.html", message=message)
 
