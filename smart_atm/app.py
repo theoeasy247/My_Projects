@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, redirect, url_for
 
 app = Flask(__name__)
 
 app.secret_key = "smart-atm-development-key"
 
 correct_pin = "2026"
+balance = 50000
 
 # Homepage and login route
 @app.route("/", methods=["GET", "POST"])
@@ -24,7 +25,8 @@ def home():
         else:
             if entered_pin == correct_pin:
                 session["attempts"] = 0
-                message = "PIN accepted! Access granted."
+                session["logged_in"] = True
+                return redirect(url_for("dashboard"))
 
             else:
                 attempts += 1
@@ -37,6 +39,73 @@ def home():
 
     return render_template("index.html", message=message)
 
+@app.route("/dashboard")
+def dashboard():
+
+    if not session.get("logged_in"):
+        return redirect(url_for("home"))
+
+    return render_template("dashboard.html", balance=balance)
+
+@app.route("/deposit", methods=["POST"])
+def deposit():
+    global balance
+
+    if not session.get("logged_in"):
+        return redirect(url_for("home"))
+
+    amount = request.form.get("amount", "").strip()
+
+    try:
+        amount = int(amount)
+
+        if amount > 0:
+            balance += amount
+            message = "Deposit successful!"
+        else:
+            message = "Deposit amount must be greater than zero."
+
+    except ValueError:
+        message = "Please enter a valid whole number."
+
+    return render_template(
+        "dashboard.html",
+        balance=balance,
+        message=message
+    )
+
+@app.route("/withdraw", methods=["POST"])
+def withdraw():
+    global balance
+
+    if not session.get("logged_in"):
+        return redirect(url_for("home"))
+
+    amount = request.form.get("amount", "").strip()
+    
+    print("Received withdrawal amount:", repr(amount))
+
+    try:
+        amount = int(amount)
+
+        if amount <= 0:
+            message = "Withdrawal amount must be greater than zero."
+
+        elif amount > balance:
+            message = "Insufficient funds. Your balance is too low."
+
+        else:
+            balance -= amount
+            message = "Withdrawal successful!"
+
+    except ValueError:
+        message = "Please enter a valid whole number."
+
+    return render_template(
+        "dashboard.html",
+        balance=balance,
+        message=message
+    )
 
 # Run the Flask application
 if __name__ == "__main__":
