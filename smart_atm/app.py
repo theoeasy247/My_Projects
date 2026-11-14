@@ -6,6 +6,7 @@ app.secret_key = "smart-atm-development-key"
 
 correct_pin = "2026"
 balance = 50000
+transaction_history = []
 
 # Homepage and login route
 @app.route("/", methods=["GET", "POST"])
@@ -45,7 +46,11 @@ def dashboard():
     if not session.get("logged_in"):
         return redirect(url_for("home"))
 
-    return render_template("dashboard.html", balance=balance)
+    return render_template(
+        "dashboard.html", 
+        balance=balance,
+        transaction_history=transaction_history
+    )
 
 @app.route("/deposit", methods=["POST"])
 def deposit():
@@ -61,7 +66,10 @@ def deposit():
 
         if amount > 0:
             balance += amount
+            transaction_history.append(f"Deposit: ₦{amount}")
+            print(transaction_history)
             message = "Deposit successful!"
+
         else:
             message = "Deposit amount must be greater than zero."
 
@@ -71,7 +79,8 @@ def deposit():
     return render_template(
         "dashboard.html",
         balance=balance,
-        message=message
+        message=message,
+        transaction_history=transaction_history
     )
 
 @app.route("/withdraw", methods=["POST"])
@@ -82,8 +91,6 @@ def withdraw():
         return redirect(url_for("home"))
 
     amount = request.form.get("amount", "").strip()
-    
-    print("Received withdrawal amount:", repr(amount))
 
     try:
         amount = int(amount)
@@ -96,6 +103,7 @@ def withdraw():
 
         else:
             balance -= amount
+            transaction_history.append(f"Withdrawal: ₦{amount}")
             message = "Withdrawal successful!"
 
     except ValueError:
@@ -104,7 +112,8 @@ def withdraw():
     return render_template(
         "dashboard.html",
         balance=balance,
-        message=message
+        message=message,
+        transaction_history=transaction_history
     )
 
 # Run the Flask application
