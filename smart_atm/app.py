@@ -69,17 +69,20 @@ def deposit():
             transaction_history.append(f"Deposit: ₦{amount}")
             print(transaction_history)
             message = "Deposit successful!"
+            message_type = "success"
 
         else:
             message = "Deposit amount must be greater than zero."
-
+            message_type = "error"
     except ValueError:
         message = "Please enter a valid whole number."
+        message_type = "error"
 
     return render_template(
         "dashboard.html",
         balance=balance,
         message=message,
+        message_type=message_type,
         transaction_history=transaction_history
     )
 
@@ -97,22 +100,25 @@ def withdraw():
 
         if amount <= 0:
             message = "Withdrawal amount must be greater than zero."
-
+            message_type = "error"
         elif amount > balance:
             message = "Insufficient funds. Your balance is too low."
-
+            message_type = "error"
         else:
             balance -= amount
             transaction_history.append(f"Withdrawal: ₦{amount}")
             message = "Withdrawal successful!"
+            message_type = "success"
 
     except ValueError:
         message = "Please enter a valid whole number."
+        message_type = "error"
 
     return render_template(
         "dashboard.html",
         balance=balance,
         message=message,
+        message_type=message_type,
         transaction_history=transaction_history
     )
 
