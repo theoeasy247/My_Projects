@@ -1,0 +1,252 @@
+from flask import Flask, render_template, request, session, redirect, url_for
+from datetime import datetime
+
+app = Flask(__name__)
+
+app.secret_key = "smart-atm-development-key"
+
+correct_pin = "2026"
+balance = 50000
+transaction_history = []
+
+# Homepage and login route
+@app.route("/", methods=["GET", "POST"])
+def home():
+
+    message = ""
+
+    attempts = session.get("attempts", 0)
+
+    if request.method == "POST":
+
+        entered_pin = request.form.get("pin", "").strip()
+        
+        if attempts >= 3:
+            message = "Too many incorrect attempts. Access denied."
+
+        else:
+            if entered_pin == correct_pin:
+                session["attempts"] = 0
+                session["logged_in"] = True
+                return redirect(url_for("dashboard"))
+
+            else:
+                attempts += 1
+                session["attempts"] = attempts
+
+                message = "Incorrect PIN. Please try again."
+
+                if attempts >= 3:
+                    message = "Too many incorrect attempts. Access denied."
+
+    return render_template("index.html", message=message)
+
+@app.route("/dashboard")
+def dashboard():
+
+    if not session.get("logged_in"):
+        return redirect(url_for("home"))
+
+    return render_template(
+        "dashboard.html", 
+        balance=balance,
+        transaction_history=transaction_history
+    )
+
+@app.route("/deposit", methods=["POST"])
+def deposit():
+    global balance
+
+    if not session.get("logged_in"):
+        return redirect(url_for("home"))
+
+    amount = request.form.get("amount", "").strip()
+
+    try:
+        amount = int(amount)
+
+        if amount > 0:
+            balance += amount
+            now = datetime.now()
+            timestamp = now.strftime("%d/%m/%Y %I:%M %p")
+
+            transaction_history.append({
+                "type": "Deposit",
+                "amount": amount,
+                "timestamp": timestamp
+            })
+            
+            message = "Deposit successful!"
+            message_type = "success"
+
+        else:
+            message = "Deposit amount must be greater than zero."
+            message_type = "error"
+    except ValueError:
+        message = "Please enter a valid whole number."
+        message_type = "error"
+
+    return render_template(
+        "dashboard.html",
+        balance=balance,
+        message=message,
+        message_type=message_type,
+        transaction_history=transaction_history
+    )
+
+@app.route("/withdraw", methods=["POST"])
+def withdraw():
+    global balance
+
+    if not session.get("logged_in"):
+        return redirect(url_for("home"))
+
+    amount = request.form.get("amount", "").strip()
+
+    try:
+        amount = int(amount)
+
+        if amount <= 0:
+            message = "Withdrawal amount must be greater than zero."
+            message_type = "error"
+        elif amount > balance:
+            message = "Insufficient funds. Your balance is too low."
+            message_type = "error"
+        else:
+            balance -= amount
+            now = datetime.now()
+            timestamp = now.strftime("%d/%m/%Y %I:%M %p")
+
+            transaction_history.append({
+                "type": "Withdrawal",
+                "amount": amount,
+                "timestamp": timestamp
+            })
+            message = "Withdrawal successful!"
+            message_type = "success"
+
+    except ValueError:
+        message = "Please enter a valid whole number."
+        message_type = "error"
+
+    return render_template(
+        "dashboard.html",
+        balance=balance,
+        message=message,
+        message_type=message_type,
+        transaction_history=transaction_history
+    )
+
+# Run the Flask application
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+correct_pin = "2026"
+balance = 50000
+transaction_history = []
+attempts = 0
+max_attempts = 3
+authenticated = False
+
+while attempts < max_attempts and not authenticated:
+    entered_pin = input("Enter your PIN: ")
+
+    if entered_pin == correct_pin:
+        authenticated = True
+        print("PIN accepted")
+    else:
+        attempts = attempts + 1
+        print("Incorrect PIN")
+        
+if not authenticated:
+     print("Access denied") 
+
+MENU = """
+===== SMART ATM =====
+1. Check Balance
+2. Deposit Money
+3. Withdraw Money
+4. View Transaction History 
+5. Exit
+"""
+
+if authenticated:
+    while True:
+        print(MENU)
+        choice = input("Select an option (1-5):").strip()
+
+        if choice == "1":
+            print(f"Your balance is ₦{balance}")
+        elif choice == "2":
+            try:
+                amount = int(input("Enter the deposit amount: "))
+                if amount > 0:
+                    balance = balance + amount
+                    transaction_history.append(f"Deposit: ₦{amount}")
+                    print(f"Deposit successful: ₦{amount}")
+                    print(f"Your new balance is: ₦{balance}")
+                    
+                else:
+                    print("Invalid deposit. Amount must be greater than zero.") 
+               
+            except ValueError:
+                print("input must be a valid whole number")
+    
+        elif choice == "3":
+            try:
+                withdrawal_amount = int(input("Enter withdrawal amount: "))
+                if withdrawal_amount <= 0:
+                    print("Invalid Amount. Amount must be greater than zero.") 
+
+                elif withdrawal_amount > balance:
+                    print("Insufficient funds")
+                
+                else:
+                    balance = balance - withdrawal_amount
+                    print(f"Withdrawal is successful: ₦{withdrawal_amount}")
+                    print(f"Your new balance is: ₦{balance}")
+                    transaction_history.append(f"Withdrawal: ₦{withdrawal_amount}")
+            
+            except ValueError:
+                print("input must be a valid whole number")
+
+        
+
+        elif choice == "4":
+            print("===== TRANSACTION HISTORY =====")
+            total_deposits = 0
+            total_withdrawals = 0
+        
+            for transaction in transaction_history:
+                parts = transaction.split("₦")
+                amount= int(parts[1])
+
+                if transaction.startswith("Deposit"):
+                    total_deposits += amount
+                    
+                elif transaction.startswith("Withdrawal"):
+                    total_withdrawals += amount
+                    
+                
+            if not transaction_history:
+                print("No transactions yet")
+
+            else:
+                for transaction in transaction_history:
+                    print(transaction)
+
+            print(f"Total deposits: ₦{total_deposits}")
+            print(f"Total withdrawals: ₦{total_withdrawals}")
+            print(f"Current balance: ₦{balance}")
+
+        elif choice == "5":
+            print("Thank you for using Smart ATM")
+            break
+            
+        else:
+            print("Invalid choice. please select 1-5")
+
+        
+     
+           
