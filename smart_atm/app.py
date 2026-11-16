@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, session, redirect, url_for
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -66,8 +67,15 @@ def deposit():
 
         if amount > 0:
             balance += amount
-            transaction_history.append(f"Deposit: ₦{amount}")
-            print(transaction_history)
+            now = datetime.now()
+            timestamp = now.strftime("%d/%m/%Y %I:%M %p")
+
+            transaction_history.append({
+                "type": "Deposit",
+                "amount": amount,
+                "timestamp": timestamp
+            })
+            
             message = "Deposit successful!"
             message_type = "success"
 
@@ -106,7 +114,14 @@ def withdraw():
             message_type = "error"
         else:
             balance -= amount
-            transaction_history.append(f"Withdrawal: ₦{amount}")
+            now = datetime.now()
+            timestamp = now.strftime("%d/%m/%Y %I:%M %p")
+
+            transaction_history.append({
+                "type": "Withdrawal",
+                "amount": amount,
+                "timestamp": timestamp
+            })
             message = "Withdrawal successful!"
             message_type = "success"
 

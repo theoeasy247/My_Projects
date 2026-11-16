@@ -79,9 +79,27 @@
 
         {% for transaction in transaction_history %}
 
-            <p>{{ transaction }}</p>
+    <div class="transaction-item">
 
-        {% endfor %}
+        <div class="transaction-details">
+
+            <strong>{{ transaction.type }}</strong>
+
+            <span>{{ transaction.timestamp }}</span>
+
+        </div>
+
+        <strong class="{% if transaction.type == 'Deposit' %}deposit-amount{% else %}withdrawal-amount{% endif %}">
+    {% if transaction.type == 'Deposit' %}
+        +₦{{ "{:,.0f}".format(transaction.amount) }}
+    {% else %}
+        −₦{{ "{:,.0f}".format(transaction.amount) }}
+    {% endif %}
+</strong>
+
+    </div>
+
+{% endfor %}
 
     {% else %}
 
