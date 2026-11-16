@@ -1,6 +1,10 @@
 from flask import Flask, render_template, request, session, redirect, url_for
 from datetime import datetime
 import sqlite3
+import hashlib
+import secrets
+import hmac
+
 
 app = Flask(__name__)
 
@@ -8,6 +12,30 @@ def get_db_connection():
     connection = sqlite3.connect("smart_atm.db")
     connection.row_factory = sqlite3.Row
     return connection
+
+def hash_pin(pin):
+    salt = secrets.token_bytes(16)
+
+    pin_hash = hashlib.pbkdf2_hmac(
+        "sha256",
+        pin.encode("utf-8"),
+        salt,
+        600000
+    )
+
+    return salt.hex() + ":" + pin_hash.hex()
+
+def verify_pin(pin, stored_hash):
+    salt_hex, hash_hex = stored_hash.split(":")
+    salt = bytes.fromhex(salt_hex)
+
+    new_hash = hashlib.pbkdf2_hmac(
+    "sha256",
+    pin.encode("utf-8"),
+    salt,
+    600000
+)
+    return hmac.compare_digest(new_hash.hex(), hash_hex)
 
 def init_db():
     connection = get_db_connection()
@@ -41,6 +69,50 @@ correct_pin = "2026"
 balance = 50000
 transaction_history = []
 
+# Customer registration route
+@app.route("/register", methods=["GET", "POST"])
+def register():
+
+    message = ""
+
+    if request.method == "POST":
+
+        account_name = request.form.get("account_name", "").strip()
+        pin = request.form.get("pin", "").strip()
+        confirm_pin = request.form.get("confirm_pin", "").strip()
+
+        if not account_name:
+            message = "Please enter your full name."
+
+        elif len(pin) != 4 or not pin.isdigit():
+            message = "PIN must contain exactly 4 digits."
+
+        elif pin != confirm_pin:
+            message = "Your PINs do not match."
+
+        else:
+            pin_hash = hash_pin(pin)
+
+            connection = get_db_connection()
+
+            cursor = connection.execute(
+                """
+                INSERT INTO accounts (account_name, pin_hash, balance)
+                VALUES (?, ?, ?)
+                """,
+                (account_name, pin_hash, 0)
+            )
+
+            connection.commit()
+
+            account_id = cursor.lastrowid
+
+            connection.close()
+
+            message = f"Account created successfully! Your Account ID is {account_id}."
+
+    return render_template("register.html", message=message)
+
 # Homepage and login route
 @app.route("/", methods=["GET", "POST"])
 def home():
@@ -51,22 +123,43 @@ def home():
 
     if request.method == "POST":
 
+        account_id = request.form.get("account_id", "").strip()
         entered_pin = request.form.get("pin", "").strip()
         
         if attempts >= 3:
             message = "Too many incorrect attempts. Access denied."
 
         else:
-            if entered_pin == correct_pin:
+
+            try:
+                account_id = int(account_id)
+
+                connection = get_db_connection()
+
+                account = connection.execute(
+                    "SELECT * FROM accounts WHERE account_id = ?",
+                    (account_id,)
+                ).fetchone()
+
+                connection.close()
+
+            except ValueError:
+                account = None
+
+            if account and verify_pin(entered_pin, account["pin_hash"]):
+
                 session["attempts"] = 0
                 session["logged_in"] = True
+                session["account_id"] = account["account_id"]
+                session["account_name"] = account["account_name"]
+
                 return redirect(url_for("dashboard"))
 
             else:
                 attempts += 1
                 session["attempts"] = attempts
 
-                message = "Incorrect PIN. Please try again."
+                message = "Incorrect Account ID or PIN. Please try again."
 
                 if attempts >= 3:
                     message = "Too many incorrect attempts. Access denied."

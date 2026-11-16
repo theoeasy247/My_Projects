@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Smart ATM Registration</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <div class="login-card">
+
+        <h1>SMART ATM</h1>
+
+        <p class="welcome">Create Your Account</p>
+        <form method="POST" action="/register">
+
+    <label for="account_name">Full Name</label>
+    <input
+        type="text"
+        id="account_name"
+        name="account_name"
+        placeholder="Enter your full name"
+        required
+    >
+
+    <label for="pin">Create 4-Digit PIN</label>
+    <input
+        type="password"
+        id="pin"
+        name="pin"
+        placeholder="Create your PIN"
+        maxlength="4"
+        required
+    >
+
+    <label for="confirm_pin">Confirm PIN</label>
+    <input
+        type="password"
+        id="confirm_pin"
+        name="confirm_pin"
+        placeholder="Confirm your PIN"
+        maxlength="4"
+        required
+    >
+
+    <button type="submit">Create Account</button>
+
+</form>
+{% if message %}
+    <p>{{ message }}</p>
+{% endif %}
+
+<p>Already have an account?</p>
+
+<a href="{{ url_for('home') }}">Login Here</a>
+
+
+    </div>
+
+</body>
+</html>

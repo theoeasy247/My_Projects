@@ -19,21 +19,37 @@
         <p class="instruction">Please enter your PIN to continue</p>
 
         <form method="POST" action="/">
-            <label for="pin">Enter ATM PIN</label>
+        
+        <label for="account_id">Enter Account ID</label>
 
-            <input
-                type="password"
-                id="pin"
-                name="pin"
-                placeholder="Enter your 4-digit PIN"
-                maxlength="4"
-            >
+        <input
+            type="number"
+            id="account_id"
+            name="account_id"
+            placeholder="Enter your Account ID"
+            min="1"
+            required
+        >
+            
+        <label for="pin">Enter ATM PIN</label>
 
+        <input
+            type="password"
+            id="pin"
+            name="pin"
+            placeholder="Enter your 4-digit PIN"
+            maxlength="4"
+            required
+        >
             <button type="submit">Login</button>
         </form>
         {% if message %}
             <p>{{ message }}</p>
         {% endif %}
+        <p>Don't have an account?</p>
+
+        <a href="{{ url_for('register') }}">Create Account</a>
+
         <p class="footer">Secure ATM Simulation System</p>
 
     </div>
