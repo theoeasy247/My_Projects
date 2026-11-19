@@ -8,9 +8,12 @@ import hmac
 
 app = Flask(__name__)
 
+
 def get_db_connection():
     connection = sqlite3.connect("smart_atm.db")
     connection.row_factory = sqlite3.Row
+
+    connection.execute("PRAGMA foreign_keys = ON")
     return connection
 
 def hash_pin(pin):
@@ -219,6 +222,16 @@ def dashboard():
         transaction_history=transaction_history
     )
 
+
+# Customer logout route
+@app.route("/logout")
+def logout():
+
+    session.clear()
+
+    flash("You have successfully logged out.", "success")
+
+    return redirect(url_for("home"))
 
 
 @app.route("/deposit", methods=["POST"])
