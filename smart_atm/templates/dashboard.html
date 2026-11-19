@@ -15,7 +15,16 @@
 
     <h1>SMART ATM DASHBOARD</h1>
 
-    <p>Welcome! You have successfully logged in.</p>
+    <p>Welcome, {{ account_name }}! You have successfully logged in.</p>
+
+    
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="{{ category }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endwith %}
 
     <div class="balance-card">
 

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, redirect, url_for, flash
 from datetime import datetime
 import sqlite3
 import hashlib
@@ -166,58 +166,110 @@ def home():
 
     return render_template("index.html", message=message)
 
+
+# Customer-specific dashboard route
 @app.route("/dashboard")
 def dashboard():
 
     if not session.get("logged_in"):
         return redirect(url_for("home"))
 
+    account_id = session.get("account_id")
+
+    connection = get_db_connection()
+
+    account = connection.execute(
+        "SELECT * FROM accounts WHERE account_id = ?",
+        (account_id,)
+    ).fetchone()
+
+    print("DEBUG Account ID:", account_id)
+    print("DEBUG Database Account:", dict(account) if account else None)
+
+    if account is None:
+        connection.close()
+        session.clear()
+        return redirect(url_for("home"))
+
+    transactions = connection.execute(
+        """
+        SELECT transaction_type, amount, timestamp
+        FROM transactions
+        WHERE account_id = ?
+        ORDER BY transaction_id DESC
+        """,
+        (account_id,)
+    ).fetchall()
+
+    connection.close()
+
+    transaction_history = [
+        {
+            "type": transaction["transaction_type"],
+            "amount": transaction["amount"],
+            "timestamp": transaction["timestamp"]
+        }
+        for transaction in transactions
+    ]
+
     return render_template(
-        "dashboard.html", 
-        balance=balance,
+        "dashboard.html",
+        account_name=account["account_name"],
+        balance=account["balance"],
         transaction_history=transaction_history
     )
 
+
+
 @app.route("/deposit", methods=["POST"])
 def deposit():
-    global balance
 
     if not session.get("logged_in"):
         return redirect(url_for("home"))
 
+    account_id = session.get("account_id")
     amount = request.form.get("amount", "").strip()
 
     try:
         amount = int(amount)
 
-        if amount > 0:
-            balance += amount
-            now = datetime.now()
-            timestamp = now.strftime("%d/%m/%Y %I:%M %p")
+        if amount <= 0:
+            flash("Deposit amount must be greater than zero.", "error")
+            return redirect(url_for("dashboard"))
 
-            transaction_history.append({
-                "type": "Deposit",
-                "amount": amount,
-                "timestamp": timestamp
-            })
-            
-            message = "Deposit successful!"
-            message_type = "success"
+        now = datetime.now()
+        timestamp = now.strftime("%d/%m/%Y %I:%M %p")
 
-        else:
-            message = "Deposit amount must be greater than zero."
-            message_type = "error"
+        connection = get_db_connection()
+
+        connection.execute(
+            """
+            UPDATE accounts
+            SET balance = balance + ?
+            WHERE account_id = ?
+            """,
+            (amount, account_id)
+        )
+
+        connection.execute(
+            """
+            INSERT INTO transactions
+            (account_id, transaction_type, amount, timestamp)
+            VALUES (?, ?, ?, ?)
+            """,
+            (account_id, "Deposit", amount, timestamp)
+        )
+
+        connection.commit()
+        connection.close()
+
+        flash("Deposit successful!", "success")
+
     except ValueError:
-        message = "Please enter a valid whole number."
-        message_type = "error"
+        flash("Please enter a valid whole number.", "error")
 
-    return render_template(
-        "dashboard.html",
-        balance=balance,
-        message=message,
-        message_type=message_type,
-        transaction_history=transaction_history
-    )
+    return redirect(url_for("dashboard"))
+
 
 @app.route("/withdraw", methods=["POST"])
 def withdraw():
@@ -226,41 +278,64 @@ def withdraw():
     if not session.get("logged_in"):
         return redirect(url_for("home"))
 
+    account_id = session.get("account_id")
     amount = request.form.get("amount", "").strip()
 
     try:
         amount = int(amount)
 
         if amount <= 0:
-            message = "Withdrawal amount must be greater than zero."
-            message_type = "error"
-        elif amount > balance:
-            message = "Insufficient funds. Your balance is too low."
-            message_type = "error"
-        else:
-            balance -= amount
-            now = datetime.now()
-            timestamp = now.strftime("%d/%m/%Y %I:%M %p")
+            flash("Withdrawal amount must be greater than zero.")
+            return redirect(url_for("dashboard"))
+        
+        connection = get_db_connection()
 
-            transaction_history.append({
-                "type": "Withdrawal",
-                "amount": amount,
-                "timestamp": timestamp
-            })
-            message = "Withdrawal successful!"
-            message_type = "success"
+        account = connection.execute(
+            "SELECT balance FROM accounts WHERE account_id = ?",
+            (account_id,)
+        ).fetchone()
+
+        if account is None:
+            connection.close()
+            session.clear()
+            return redirect(url_for("home"))
+
+        if amount > account["balance"]:
+            connection.close()
+            flash("Insufficient funds. Your balance is too low.", "error")
+            return redirect(url_for("dashboard"))
+        
+        now = datetime.now()
+        timestamp = now.strftime("%d/%m/%Y %I:%M %p")
+
+        connection.execute(
+            """
+            UPDATE accounts
+            SET balance = balance - ?
+            WHERE account_id = ?
+            """,
+            (amount, account_id)
+        )
+
+        connection.execute(
+            """
+            INSERT INTO transactions
+            (account_id, transaction_type, amount, timestamp)
+            VALUES (?, ?, ?, ?)
+            """,
+            (account_id, "Withdrawal", amount, timestamp)
+        )
+
+        connection.commit()
+        connection.close()
+        
+        flash("Withdrawal successful!", "success")
 
     except ValueError:
-        message = "Please enter a valid whole number."
-        message_type = "error"
+        flash("Please enter a valid whole number.", "error")
 
-    return render_template(
-        "dashboard.html",
-        balance=balance,
-        message=message,
-        message_type=message_type,
-        transaction_history=transaction_history
-    )
+    return redirect(url_for("dashboard"))
+
 
 # Run the Flask application
 if __name__ == "__main__":
