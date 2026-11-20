@@ -186,9 +186,7 @@ def dashboard():
         (account_id,)
     ).fetchone()
 
-    print("DEBUG Account ID:", account_id)
-    print("DEBUG Database Account:", dict(account) if account else None)
-
+    
     if account is None:
         connection.close()
         session.clear()
@@ -274,19 +272,28 @@ def deposit():
         )
 
         connection.commit()
-        connection.close()
 
         flash("Deposit successful!", "success")
 
     except ValueError:
         flash("Please enter a valid whole number.", "error")
 
+    except sqlite3.Error as error:
+        if "connection" in locals():
+            connection.rollback()
+
+        print("Database error:", error)
+        flash("Deposit failed. Please try again.", "error")
+
+    finally:
+        if "connection" in locals():
+            connection.close()
+
     return redirect(url_for("dashboard"))
 
 
 @app.route("/withdraw", methods=["POST"])
 def withdraw():
-    global balance
 
     if not session.get("logged_in"):
         return redirect(url_for("home"))
@@ -294,11 +301,11 @@ def withdraw():
     account_id = session.get("account_id")
     amount = request.form.get("amount", "").strip()
 
-    try:
+    try: 
         amount = int(amount)
 
         if amount <= 0:
-            flash("Withdrawal amount must be greater than zero.")
+            flash("Withdrawal amount must be greater than zero.", "error")
             return redirect(url_for("dashboard"))
         
         connection = get_db_connection()
@@ -309,12 +316,11 @@ def withdraw():
         ).fetchone()
 
         if account is None:
-            connection.close()
             session.clear()
             return redirect(url_for("home"))
 
         if amount > account["balance"]:
-            connection.close()
+            
             flash("Insufficient funds. Your balance is too low.", "error")
             return redirect(url_for("dashboard"))
         
@@ -340,12 +346,22 @@ def withdraw():
         )
 
         connection.commit()
-        connection.close()
-        
+
         flash("Withdrawal successful!", "success")
 
     except ValueError:
         flash("Please enter a valid whole number.", "error")
+
+    except sqlite3.Error as error:
+        if "connection" in locals():
+            connection.rollback()
+
+        print("Database error:", error)
+        flash("Withdrawal failed. Please try again.", "error")
+
+    finally:
+        if "connection" in locals():
+            connection.close()
 
     return redirect(url_for("dashboard"))
 

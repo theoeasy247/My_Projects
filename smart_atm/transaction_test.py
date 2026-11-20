@@ -25,7 +25,9 @@ try:
     )
 
     print("account balance updated successufully!")
-
+    
+    cursor.execute("UPDATE wrong_table SET balance = 0")
+    
     connection.commit()
 
 except sqlite3.Error as error:
