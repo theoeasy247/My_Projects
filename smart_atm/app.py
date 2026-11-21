@@ -319,22 +319,23 @@ def withdraw():
             session.clear()
             return redirect(url_for("home"))
 
-        if amount > account["balance"]:
-            
-            flash("Insufficient funds. Your balance is too low.", "error")
-            return redirect(url_for("dashboard"))
-        
         now = datetime.now()
         timestamp = now.strftime("%d/%m/%Y %I:%M %p")
 
-        connection.execute(
+
+        cursor = connection.execute(
             """
             UPDATE accounts
             SET balance = balance - ?
             WHERE account_id = ?
+            AND balance >= ?
             """,
-            (amount, account_id)
+                (amount, account_id, amount)
         )
+
+        if cursor.rowcount == 0:
+            flash("Insufficient funds. Your balance is too low.", "error")
+            return redirect(url_for("dashboard"))
 
         connection.execute(
             """
