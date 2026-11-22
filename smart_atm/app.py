@@ -4,10 +4,13 @@ import sqlite3
 import hashlib
 import secrets
 import hmac
-
+from dotenv import load_dotenv
+import os
 
 app = Flask(__name__)
+load_dotenv()
 
+app.secret_key = os.getenv("SECRET_KEY")
 
 def get_db_connection():
     connection = sqlite3.connect("smart_atm.db")
