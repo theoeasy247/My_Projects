@@ -8,9 +8,16 @@ from dotenv import load_dotenv
 import os
 
 app = Flask(__name__)
+
 load_dotenv()
 
 app.secret_key = os.getenv("SECRET_KEY")
+
+if not app.secret_key:
+    raise RuntimeError("SECRET_KEY is missing. Check your .env file.")
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = False
 
 def get_db_connection():
     connection = sqlite3.connect("smart_atm.db")
@@ -69,7 +76,7 @@ def init_db():
     connection.commit()
     connection.close()
 
-app.secret_key = "smart-atm-development-key"
+
 
 correct_pin = "2026"
 balance = 50000
