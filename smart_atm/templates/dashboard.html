@@ -41,6 +41,8 @@
 
         <form method="POST" action="/deposit">
 
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
             <label for="amount">Enter Amount (₦)</label>
 
         <input 
@@ -61,6 +63,8 @@
     <h3>Withdraw Money</h3>
 
     <form method="POST" action="/withdraw">
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <label for="withdraw_amount">Enter Amount (₦)</label>
 

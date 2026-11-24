@@ -19,8 +19,9 @@
         <p class="instruction">Please enter your PIN to continue</p>
 
         <form method="POST" action="/">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
-        <label for="account_id">Enter Account ID</label>
+            <label for="account_id">Enter Account ID</label>
 
         <input
             type="number"

@@ -18,8 +18,9 @@
 
         <p class="welcome">Create Your Account</p>
         <form method="POST" action="/register">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <label for="account_name">Full Name</label>
+            <label for="account_name">Full Name</label>
     <input
         type="text"
         id="account_name"

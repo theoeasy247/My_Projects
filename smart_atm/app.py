@@ -4,8 +4,10 @@ import sqlite3
 import hashlib
 import secrets
 import hmac
+import time
 from dotenv import load_dotenv
 import os
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
 
@@ -15,9 +17,13 @@ app.secret_key = os.getenv("SECRET_KEY")
 
 if not app.secret_key:
     raise RuntimeError("SECRET_KEY is missing. Check your .env file.")
+
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = False
+
+csrf = CSRFProtect(app)
+
 
 def get_db_connection():
     connection = sqlite3.connect("smart_atm.db")
@@ -73,10 +79,63 @@ def init_db():
         )
     """)
 
+    connection.execute("""
+        CREATE TABLE IF NOT EXISTS login_attempts (
+            attempt_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            attempted_account_id TEXT NOT NULL,
+            ip_address TEXT NOT NULL,
+            attempt_time INTEGER NOT NULL
+        )
+    """)
+
+    connection.execute("""
+        CREATE INDEX IF NOT EXISTS idx_login_attempts_lookup
+        ON login_attempts (
+            attempted_account_id,
+            ip_address,
+            attempt_time
+        )
+    """)
+
     connection.commit()
     connection.close()
 
+def record_failed_login(account_id, ip_address):
 
+    connection = get_db_connection()
+
+    connection.execute(
+        """
+        INSERT INTO login_attempts
+        (attempted_account_id, ip_address, attempt_time)
+        VALUES (?, ?, ?)
+        """,
+        (account_id, ip_address, int(time.time()))
+    )
+
+    connection.commit()
+    connection.close()
+
+def is_login_blocked(account_id, ip_address):
+
+    connection = get_db_connection()
+
+    cutoff_time = int(time.time()) - (15 * 60)
+
+    attempts = connection.execute(
+        """
+        SELECT COUNT(*)
+        FROM login_attempts
+        WHERE attempted_account_id = ?
+        AND ip_address = ?
+        AND attempt_time > ?
+        """,
+        (account_id, ip_address, cutoff_time)
+    ).fetchone()[0]
+
+    connection.close()
+
+    return attempts >= 5
 
 correct_pin = "2026"
 balance = 50000
@@ -126,42 +185,63 @@ def register():
 
     return render_template("register.html", message=message)
 
+
 # Homepage and login route
 @app.route("/", methods=["GET", "POST"])
 def home():
 
     message = ""
 
-    attempts = session.get("attempts", 0)
-
     if request.method == "POST":
 
-        account_id = request.form.get("account_id", "").strip()
+        account_id_text = request.form.get("account_id", "").strip()
         entered_pin = request.form.get("pin", "").strip()
-        
-        if attempts >= 3:
-            message = "Too many incorrect attempts. Access denied."
+
+        ip_address = request.remote_addr or "unknown"
+
+        # Check whether this visitor is temporarily blocked
+        if is_login_blocked(account_id_text, ip_address):
+
+            message = "Too many incorrect attempts. Please try again later."
 
         else:
 
             try:
-                account_id = int(account_id)
+                account_id = int(account_id_text)
 
                 connection = get_db_connection()
 
-                account = connection.execute(
-                    "SELECT * FROM accounts WHERE account_id = ?",
-                    (account_id,)
-                ).fetchone()
+                try:
+                    account = connection.execute(
+                        "SELECT * FROM accounts WHERE account_id = ?",
+                        (account_id,)
+                    ).fetchone()
 
-                connection.close()
+                finally:
+                    connection.close()
 
             except ValueError:
                 account = None
 
+            # Verify the customer's account and PIN
             if account and verify_pin(entered_pin, account["pin_hash"]):
 
-                session["attempts"] = 0
+                # Clear failed attempts after successful login
+                connection = get_db_connection()
+
+                connection.execute(
+                    """
+                    DELETE FROM login_attempts
+                    WHERE attempted_account_id = ?
+                    AND ip_address = ?
+                    """,
+                    (account_id_text, ip_address)
+                )
+
+                connection.commit()
+                connection.close()
+
+                session.pop("attempts", None)
                 session["logged_in"] = True
                 session["account_id"] = account["account_id"]
                 session["account_name"] = account["account_name"]
@@ -169,13 +249,14 @@ def home():
                 return redirect(url_for("dashboard"))
 
             else:
-                attempts += 1
-                session["attempts"] = attempts
 
-                message = "Incorrect Account ID or PIN. Please try again."
+                # Record this failed login attempt
+                record_failed_login(account_id_text, ip_address)
 
-                if attempts >= 3:
-                    message = "Too many incorrect attempts. Access denied."
+                if is_login_blocked(account_id_text, ip_address):
+                    message = "Too many incorrect attempts. Please try again later."
+                else:
+                    message = "Incorrect Account ID or PIN. Please try again."
 
     return render_template("index.html", message=message)
 
