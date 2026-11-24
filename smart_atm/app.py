@@ -137,6 +137,24 @@ def is_login_blocked(account_id, ip_address):
 
     return attempts >= 5
 
+def is_ip_blocked(ip_address):
+
+    connection = get_db_connection()
+    cutoff_time = int(time.time()) - (15 * 60)
+    attempts = connection.execute(
+        """
+        SELECT COUNT(*)
+        FROM login_attempts
+        WHERE ip_address = ?
+        AND attempt_time > ?
+        """,
+        (ip_address, cutoff_time)
+    ).fetchone()[0]
+
+    connection.close()
+
+    return attempts >=20
+
 correct_pin = "2026"
 balance = 50000
 transaction_history = []
@@ -200,7 +218,7 @@ def home():
         ip_address = request.remote_addr or "unknown"
 
         # Check whether this visitor is temporarily blocked
-        if is_login_blocked(account_id_text, ip_address):
+        if is_login_blocked(account_id_text, ip_address) or is_ip_blocked(ip_address):
 
             message = "Too many incorrect attempts. Please try again later."
 
@@ -253,7 +271,7 @@ def home():
                 # Record this failed login attempt
                 record_failed_login(account_id_text, ip_address)
 
-                if is_login_blocked(account_id_text, ip_address):
+                if is_login_blocked(account_id_text, ip_address) or is_ip_blocked(ip_address):
                     message = "Too many incorrect attempts. Please try again later."
                 else:
                     message = "Incorrect Account ID or PIN. Please try again."
@@ -313,7 +331,7 @@ def dashboard():
 
 
 # Customer logout route
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 def logout():
 
     session.clear()
