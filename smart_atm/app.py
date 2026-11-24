@@ -115,6 +115,26 @@ def record_failed_login(account_id, ip_address):
 
     connection.commit()
     connection.close()
+def cleanup_old_login_attempts():
+
+    connection = get_db_connection()
+
+    cutoff_time = int(time.time()) - (15 * 60)
+
+    try: 
+        cursor = connection.execute(
+            """
+            DELETE FROM login_attempts
+            WHERE attempt_time <= ?
+            """,
+            (cutoff_time,)
+        )
+        connection.commit()
+
+        return cursor.rowcount
+    finally:
+        connection.close()
+
 
 def is_login_blocked(account_id, ip_address):
 
@@ -211,6 +231,8 @@ def home():
     message = ""
 
     if request.method == "POST":
+
+        cleanup_old_login_attempts()
 
         account_id_text = request.form.get("account_id", "").strip()
         entered_pin = request.form.get("pin", "").strip()
