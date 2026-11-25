@@ -24,30 +24,38 @@ connection.commit()
 cursor.execute(
     "SELECT * FROM accounts WHERE account_id = ?",
     (1,)
+
 )
 
 account = cursor.fetchone()
 
 print(account)
 
-connection.execute("BEGIN")
+try:
+    connection.execute("BEGIN")
 
-cursor.execute(
-    "UPDATE accounts SET balance = balance + ? WHERE account_id = ?",
-    (5000, 1)
-)
+    cursor.execute(
+        "UPDATE accounts SET balance = balance + ? WHERE account_id = ?",
+        (5000, 1)
+    )
 
-cursor.execute(
-    "SELECT balance FROM accounts WHERE account_id = ?",
-    (1,)
-)
+    cursor.execute(
+        "SELECT balance FROM accounts WHERE account_id = ?",
+        (1,)
+    )
 
-print("Balance inside transaction:", cursor.fetchone()[0])
+    print("Balance inside transaction:", cursor.fetchone()[0])
 
-connection.rollback()
+    connection.commit()
 
-print("Transaction rolled back!")
+    print("Transaction committed successfully!")
 
-print("Transaction committed successfully!")
+except Exception as error:
+    connection.rollback()
+    print("Transaction failed:", error)
+
+finally:
+    connection.close()
+    print("Database connection closed.")
 
 connection.close()
